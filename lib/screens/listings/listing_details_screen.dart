@@ -185,7 +185,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                           imageUrl: _listing!.images[index],
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
-                            color: Colors.grey.shade200,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             child: const LoadingIndicator(),
                           ),
                           errorWidget: (context, url, error) => const Icon(Icons.error),
@@ -279,7 +279,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         const SizedBox(height: 8),
         Row(
           children: [
-            const Icon(Icons.location_on_outlined, size: 18, color: Colors.grey),
+            Icon(Icons.location_on_outlined, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 4),
             Expanded(
               child: Text(_listing!.location, style: const TextStyle(color: Colors.grey)),
@@ -323,7 +323,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -356,9 +356,9 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,7 +398,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5)),
         ],

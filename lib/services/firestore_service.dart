@@ -89,25 +89,29 @@ class FirestoreService {
 
   // Get all active listings
   Stream<List<ListingModel>> getListings({SortOption sortBy = SortOption.newest}) {
-    Query query = _db
+    final query = _db
         .collection(AppConstants.listingsCollection)
         .where('isActive', isEqualTo: true);
 
-    switch (sortBy) {
-      case SortOption.newest:
-        query = query.orderBy('createdAt', descending: true);
-        break;
-      case SortOption.priceLowToHigh:
-        query = query.orderBy('price', descending: false);
-        break;
-      case SortOption.priceHighToLow:
-        query = query.orderBy('price', descending: true);
-        break;
-    }
+    return query.snapshots().map((snapshot) {
+      final listings = snapshot.docs
+          .map((doc) => ListingModel.fromSnapshot(doc))
+          .toList();
 
-    return query.snapshots().map((snapshot) => snapshot.docs
-        .map((doc) => ListingModel.fromSnapshot(doc))
-        .toList());
+      // Sort in-memory to avoid index requirement
+      switch (sortBy) {
+        case SortOption.newest:
+          listings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          break;
+        case SortOption.priceLowToHigh:
+          listings.sort((a, b) => a.price.compareTo(b.price));
+          break;
+        case SortOption.priceHighToLow:
+          listings.sort((a, b) => b.price.compareTo(a.price));
+          break;
+      }
+      return listings;
+    });
   }
 
   // Search listings with filters
@@ -175,11 +179,16 @@ class FirestoreService {
     return _db
         .collection(AppConstants.listingsCollection)
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ListingModel.fromSnapshot(doc))
-            .toList());
+        .map((snapshot) {
+      final listings = snapshot.docs
+          .map((doc) => ListingModel.fromSnapshot(doc))
+          .toList();
+      
+      // Sort in-memory to avoid index requirement
+      listings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return listings;
+    });
   }
 
   // Update listing
@@ -276,11 +285,16 @@ class FirestoreService {
     return _db
         .collection(AppConstants.chatsCollection)
         .where('participants', arrayContains: userId)
-        .orderBy('lastMessageTime', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ChatModel.fromSnapshot(doc))
-            .toList());
+        .map((snapshot) {
+      final chats = snapshot.docs
+          .map((doc) => ChatModel.fromSnapshot(doc))
+          .toList();
+      
+      // Sort in-memory to avoid index requirement
+      chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
+      return chats;
+    });
   }
 
   // Send message

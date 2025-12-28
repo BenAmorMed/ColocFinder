@@ -97,18 +97,21 @@ class MyListingsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final listingProvider = Provider.of<ListingProvider>(context, listen: false);
+              
               Navigator.pop(context);
-              final success = await Provider.of<ListingProvider>(context, listen: false).deleteListing(listingId);
-              if (context.mounted) {
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Listing deleted successfully')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to delete listing'), backgroundColor: Colors.red),
-                  );
-                }
+              
+              final success = await listingProvider.deleteListing(listingId);
+              
+              if (success) {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(content: Text('Listing deleted successfully')),
+                );
+              } else {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(content: Text('Failed to delete listing'), backgroundColor: Colors.red),
+                );
               }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),

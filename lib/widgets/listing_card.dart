@@ -77,7 +77,7 @@ class ListingCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).cardColor,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -104,7 +104,7 @@ class ListingCard extends StatelessWidget {
                     left: 8,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -115,7 +115,14 @@ class ListingCard extends StatelessWidget {
                       ),
                       child: PopupMenuButton<String>(
                         padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.more_vert_rounded, color: Colors.black87, size: 20),
+                        icon: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.more_vert_rounded,
+                            color: Theme.of(context).iconTheme.color,
+                            size: 20,
+                          ),
+                        ),
                         onSelected: (value) {
                           if (value == 'edit' && onEdit != null) onEdit!();
                           if (value == 'delete' && onDelete != null) onDelete!();

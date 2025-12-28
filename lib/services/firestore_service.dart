@@ -61,6 +61,19 @@ class FirestoreService {
     return docRef.id;
   }
 
+  // Generate a new listing ID
+  String generateListingId() {
+    return _db.collection(AppConstants.listingsCollection).doc().id;
+  }
+
+  // Create listing with a specific ID
+  Future<void> createListingWithId(ListingModel listing) async {
+    await _db
+        .collection(AppConstants.listingsCollection)
+        .doc(listing.id)
+        .set(listing.toMap());
+  }
+
   // Get listing by ID
   Future<ListingModel?> getListing(String listingId) async {
     final doc = await _db

@@ -113,17 +113,22 @@ class ListingProvider with ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      // 1. Create listing first to get an ID (or we can just use the one we'll generate)
-      // Actually, FirestoreService.createListing generates an ID and returns it.
-      final listingId = await _firestoreService.createListing(listing);
+      // 1. Generate an ID first
+      final listingId = _firestoreService.generateListingId();
 
       // 2. Upload images using that ID
+      List<String> imageUrls = [];
       if (imageFiles.isNotEmpty) {
-        final imageUrls = await _storageService.uploadListingPhotos(listingId, imageFiles);
-        
-        // 3. Update listing with image URLs
-        await _firestoreService.updateListing(listing.copyWith(id: listingId, images: imageUrls));
+        imageUrls = await _storageService.uploadListingPhotos(listingId, imageFiles);
       }
+
+      // 3. Create the listing with the ID and image URLs in one go
+      final finalListing = listing.copyWith(
+        id: listingId,
+        images: imageUrls,
+      );
+      
+      await _firestoreService.createListingWithId(finalListing);
 
       _isLoading = false;
       notifyListeners();

@@ -4,12 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
-import '../services/storage_service.dart';
+import '../utils/image_helper.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
-  final StorageService _storageService = StorageService();
 
   User? _user;
   UserModel? _userModel;
@@ -115,6 +114,7 @@ class AuthProvider with ChangeNotifier {
     String? gender,
     String? school,
     String? work,
+    Map<String, String>? lifestylePreferences,
     File? photoFile,
   }) async {
     _isLoading = true;
@@ -126,13 +126,9 @@ class AuthProvider with ChangeNotifier {
 
       String? photoUrl = _userModel!.photoUrl;
 
-      // 1. Upload new photo if provided
+      // 1. Convert new photo to Base64 if provided
       if (photoFile != null) {
-        // Delete old photo if it exists
-        if (photoUrl != null) {
-          await _storageService.deletePhoto(photoUrl);
-        }
-        photoUrl = await _storageService.uploadUserPhoto(_userModel!.id, photoFile);
+        photoUrl = await ImageHelper.fileToBase64(photoFile);
       }
 
       // 2. Create updated user model
@@ -143,6 +139,7 @@ class AuthProvider with ChangeNotifier {
         gender: gender,
         school: school,
         work: work,
+        lifestylePreferences: lifestylePreferences,
         photoUrl: photoUrl,
       );
 

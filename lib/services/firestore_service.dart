@@ -3,6 +3,8 @@ import '../models/user_model.dart';
 import '../models/listing_model.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
+import '../models/booking_model.dart';
+import '../models/notification_model.dart';
 import '../config/constants.dart';
 
 class FirestoreService {
@@ -224,28 +226,31 @@ class FirestoreService {
   }
 
   // Get favorite listings
-  Stream<List<ListingModel>> getFavoriteListings(String userId) async* {
-    final userDoc = await _db
+  Stream<List<ListingModel>> getFavoriteListings(String userId) {
+    return _db
         .collection(AppConstants.usersCollection)
         .doc(userId)
-        .get();
-    
-    if (userDoc.exists) {
-      final user = UserModel.fromSnapshot(userDoc);
+        .snapshots()
+        .asyncMap((userDoc) async {
+      if (!userDoc.exists) return [];
       
-      if (user.favoriteListings.isEmpty) {
-        yield [];
-        return;
-      }
+      final data = userDoc.data() as Map<String, dynamic>;
+      final List<String> favoriteIds = List<String>.from(data['favoriteListings'] ?? []);
+      
+      if (favoriteIds.isEmpty) return [];
 
-      yield* _db
+      // Note: Firestore whereIn is limited to 30 items
+      final idsToFetch = favoriteIds.take(30).toList();
+      
+      final snapshot = await _db
           .collection(AppConstants.listingsCollection)
-          .where(FieldPath.documentId, whereIn: user.favoriteListings)
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-              .map((doc) => ListingModel.fromSnapshot(doc))
-              .toList());
-    }
+          .where(FieldPath.documentId, whereIn: idsToFetch)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => ListingModel.fromSnapshot(doc))
+          .toList();
+    });
   }
 
   // ============ CHAT OPERATIONS ============
@@ -278,6 +283,23 @@ class FirestoreService {
     await docRef.update({'id': docRef.id});
 
     return docRef.id;
+  }
+
+  // Check if chat exists
+  Future<bool> checkChatExists(String user1, String user2) async {
+    final existingChats = await _db
+        .collection(AppConstants.chatsCollection)
+        .where('participants', arrayContains: user1)
+        .get();
+
+    for (var doc in existingChats.docs) {
+      final data = doc.data();
+      final participants = List<String>.from(data['participants'] ?? []);
+      if (participants.contains(user2)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // Get user's chats
@@ -325,5 +347,90 @@ class FirestoreService {
         .map((snapshot) => snapshot.docs
             .map((doc) => MessageModel.fromSnapshot(doc))
             .toList());
+  }
+
+  // ============ BOOKING OPERATIONS ============
+
+  // Create booking
+  Future<void> createBooking(BookingModel booking) async {
+    final docRef = _db.collection(AppConstants.bookingsCollection).doc();
+    await _db.collection(AppConstants.bookingsCollection).doc(docRef.id).set(
+      booking.toMap()..['id'] = docRef.id
+    );
+  }
+
+  // Update booking status
+  Future<void> updateBookingStatus(String bookingId, BookingStatus status) async {
+    await _db.collection(AppConstants.bookingsCollection).doc(bookingId).update({
+      'status': status.index,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Get bookings for guest (the one requesting)
+  Stream<List<BookingModel>> getGuestBookings(String userId) {
+    return _db
+        .collection(AppConstants.bookingsCollection)
+        .where('requesterId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => BookingModel.fromSnapshot(doc))
+            .toList());
+  }
+
+  // Get bookings for host (the one who owns the listing)
+  Stream<List<BookingModel>> getHostBookings(String userId) {
+    return _db
+        .collection(AppConstants.bookingsCollection)
+        .where('ownerId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => BookingModel.fromSnapshot(doc))
+            .toList());
+  }
+
+  // ============ NOTIFICATION OPERATIONS ============
+
+  // Get user notifications
+  Stream<List<NotificationModel>> getNotifications(String userId) {
+    return _db
+        .collection(AppConstants.notificationsCollection)
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => NotificationModel.fromSnapshot(doc))
+            .toList());
+  }
+
+  // Mark notification as read
+  Future<void> markNotificationRead(String notificationId) async {
+    await _db
+        .collection(AppConstants.notificationsCollection)
+        .doc(notificationId)
+        .update({'isRead': true});
+  }
+
+  // Mark all notifications as read
+  Future<void> markAllNotificationsRead(String userId) async {
+    final unread = await _db
+        .collection(AppConstants.notificationsCollection)
+        .where('userId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final batch = _db.batch();
+    for (var doc in unread.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
+
+  // Generic method to add notification
+  Future<void> addNotification(NotificationModel notification) async {
+    final docRef = _db.collection(AppConstants.notificationsCollection).doc();
+    await _db.collection(AppConstants.notificationsCollection).doc(docRef.id).set(
+      notification.toMap()..['id'] = docRef.id
+    );
   }
 }

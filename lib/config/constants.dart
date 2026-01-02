@@ -8,6 +8,8 @@ class AppConstants {
   static const String listingsCollection = 'listings';
   static const String chatsCollection = 'chats';
   static const String messagesCollection = 'messages';
+  static const String bookingsCollection = 'bookings';
+  static const String notificationsCollection = 'notifications';
   
   // Storage Paths
   static const String userPhotosPath = 'user_photos';
@@ -63,6 +65,15 @@ class AppConstants {
   static const String timeFormat = 'HH:mm';
   static const String dateTimeFormat = 'dd/MM/yyyy HH:mm';
 
+  // Lifestyle Preferences
+  static const Map<String, List<String>> lifestylePreferences = {
+    'Smoking': ['Non-smoker', 'Smoker', 'Outside only'],
+    'Pets': ['No pets', 'Pet lover', 'Has pets'],
+    'Cleanliness': ['Very Clean', 'Moderate', 'Relaxed'],
+    'Sleep Habits': ['Early Bird', 'Night Owl', 'Mixed'],
+    'Social': ['Quiet/Private', 'Friendly/Social', 'Party Lover'],
+  };
+
   // Sort Options
   static const List<SortOption> sortOptions = SortOption.values;
 }
@@ -71,4 +82,11 @@ enum SortOption {
   newest,
   priceLowToHigh,
   priceHighToLow,
+}
+
+enum BookingStatus {
+  pending,
+  accepted,
+  rejected,
+  cancelled,
 }

@@ -10,6 +10,7 @@ import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../utils/validators.dart';
 import '../../utils/helpers.dart';
+import '../../utils/image_helper.dart';
 
 class EditListingScreen extends StatefulWidget {
   final ListingModel listing;
@@ -36,6 +37,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
   
   final List<File> _newImageFiles = [];
   late List<String> _existingImages;
+  final List<String> _removedImageUrls = [];
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -45,7 +47,10 @@ class _EditListingScreenState extends State<EditListingScreen> {
     _descriptionController = TextEditingController(text: widget.listing.description);
     _priceController = TextEditingController(text: widget.listing.price.toStringAsFixed(0));
     _locationController = TextEditingController(text: widget.listing.location);
-    _selectedRoomType = widget.listing.roomType;
+    final roomType = widget.listing.roomType;
+    _selectedRoomType = AppConstants.roomTypes.contains(roomType)
+        ? roomType
+        : AppConstants.roomTypes[0];
     _existingImages = List.from(widget.listing.images);
     
     _amenities = {
@@ -64,7 +69,11 @@ class _EditListingScreenState extends State<EditListingScreen> {
   }
 
   Future<void> _pickImages() async {
-    final List<XFile> pickedFiles = await _picker.pickMultiImage();
+    final List<XFile> pickedFiles = await _picker.pickMultiImage(
+      imageQuality: 50,
+      maxWidth: 800,
+      maxHeight: 800,
+    );
     if (pickedFiles.isNotEmpty) {
       setState(() {
         _newImageFiles.addAll(pickedFiles.map((file) => File(file.path)));
@@ -80,6 +89,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
 
   void _removeExistingImage(int index) {
     setState(() {
+      _removedImageUrls.add(_existingImages[index]);
       _existingImages.removeAt(index);
     });
   }
@@ -106,6 +116,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
       final success = await listingProvider.updateListing(
         updatedListing,
         newImageFiles: _newImageFiles,
+        removedImageUrls: _removedImageUrls,
       );
 
       if (!mounted) return;
@@ -272,7 +283,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         image: DecorationImage(
-                          image: NetworkImage(_existingImages[index]),
+                          image: ImageHelper.isBase64(_existingImages[index])
+                              ? MemoryImage(ImageHelper.decodeBase64(_existingImages[index]))
+                              : NetworkImage(_existingImages[index]) as ImageProvider,
                           fit: BoxFit.cover,
                         ),
                       ),

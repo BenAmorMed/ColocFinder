@@ -11,6 +11,7 @@ class UserModel {
   final String? school;
   final String? work;
   final List<String> favoriteListings;
+  final Map<String, String> lifestylePreferences;
   final DateTime createdAt;
 
   UserModel({
@@ -24,8 +25,10 @@ class UserModel {
     this.school,
     this.work,
     List<String>? favoriteListings,
+    Map<String, String>? lifestylePreferences,
     DateTime? createdAt,
   })  : favoriteListings = favoriteListings ?? [],
+        lifestylePreferences = lifestylePreferences ?? {},
         createdAt = createdAt ?? DateTime.now();
 
   // Convert to Map for Firestore
@@ -41,6 +44,7 @@ class UserModel {
       'school': school,
       'work': work,
       'favoriteListings': favoriteListings,
+      'lifestylePreferences': lifestylePreferences,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -58,6 +62,7 @@ class UserModel {
       school: map['school'],
       work: map['work'],
       favoriteListings: List<String>.from(map['favoriteListings'] ?? []),
+      lifestylePreferences: Map<String, String>.from(map['lifestylePreferences'] ?? {}),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -80,6 +85,7 @@ class UserModel {
     String? school,
     String? work,
     List<String>? favoriteListings,
+    Map<String, String>? lifestylePreferences,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -93,6 +99,7 @@ class UserModel {
       school: school ?? this.school,
       work: work ?? this.work,
       favoriteListings: favoriteListings ?? this.favoriteListings,
+      lifestylePreferences: lifestylePreferences ?? this.lifestylePreferences,
       createdAt: createdAt ?? this.createdAt,
     );
   }

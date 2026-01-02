@@ -41,14 +41,18 @@ class FavoritesProvider with ChangeNotifier {
   }
 
   // Toggle favorite
-  Future<bool> toggleFavorite(String userId, String listingId) async {
+  Future<bool> toggleFavorite(String userId, String listingId, {ListingModel? listing}) async {
     try {
       if (isFavorite(listingId)) {
         await _firestoreService.removeFromFavorites(userId, listingId);
         _favoriteIds.remove(listingId);
+        _favoriteListings.removeWhere((l) => l.id == listingId);
       } else {
         await _firestoreService.addToFavorites(userId, listingId);
         _favoriteIds.add(listingId);
+        if (listing != null) {
+          _favoriteListings.add(listing);
+        }
       }
       notifyListeners();
       return true;

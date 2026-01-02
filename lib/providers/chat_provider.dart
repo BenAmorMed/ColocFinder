@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../services/firestore_service.dart';
-import '../services/storage_service.dart';
+import '../utils/image_helper.dart';
 import 'dart:io';
 
 class ChatProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
-  final StorageService _storageService = StorageService();
 
   List<ChatModel> _chats = [];
   final Map<String, List<MessageModel>> _chatMessages = {};
@@ -94,10 +93,10 @@ class ChatProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // 1. Upload image
-      final imageUrl = await _storageService.uploadUserPhoto(message.senderId, imageFile);
+      // 1. Convert image to Base64
+      final imageUrl = await ImageHelper.fileToBase64(imageFile);
       
-      // 2. Send message with imageUrl
+      // 2. Send message with Base64 data inside imageUrl
       await _firestoreService.sendMessage(chatId, message.copyWith(imageUrl: imageUrl));
 
       _isLoading = false;

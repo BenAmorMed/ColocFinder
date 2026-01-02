@@ -4,6 +4,7 @@ import '../../config/theme.dart';
 import '../../models/message_model.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import '../utils/image_helper.dart';
 
 class MessageBubble extends StatelessWidget {
   final MessageModel message;
@@ -50,16 +51,22 @@ class MessageBubble extends StatelessWidget {
                 if (message.imageUrl != null) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: CachedNetworkImage(
-                      imageUrl: message.imageUrl!,
-                      placeholder: (context, url) => const SizedBox(
-                        height: 200,
-                        width: double.infinity,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(Icons.error),
-                      fit: BoxFit.cover,
-                    ),
+                    child: ImageHelper.isBase64(message.imageUrl!)
+                        ? Image.memory(
+                            ImageHelper.decodeBase64(message.imageUrl!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: message.imageUrl!,
+                            placeholder: (context, url) => const SizedBox(
+                              height: 200,
+                              width: double.infinity,
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(Icons.error),
+                            fit: BoxFit.cover,
+                          ),
                   ),
                   if (message.text.isNotEmpty) const SizedBox(height: 8),
                 ],

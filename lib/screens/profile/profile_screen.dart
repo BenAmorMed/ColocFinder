@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../config/theme.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../utils/image_helper.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final String? userId;
@@ -76,7 +77,11 @@ class UserProfileScreen extends StatelessWidget {
           CircleAvatar(
             radius: 60,
             backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-            backgroundImage: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
+            backgroundImage: user.photoUrl != null 
+                ? (ImageHelper.isBase64(user.photoUrl!)
+                    ? MemoryImage(ImageHelper.decodeBase64(user.photoUrl!))
+                    : NetworkImage(user.photoUrl!)) as ImageProvider
+                : null,
             child: user.photoUrl == null
                 ? const Icon(Icons.person, size: 60, color: AppTheme.primaryColor)
                 : null,
@@ -183,6 +188,13 @@ class UserProfileScreen extends StatelessWidget {
             Icons.list_alt_rounded,
             'My Listings',
             () => Navigator.pushNamed(context, AppRoutes.myListings),
+          ),
+          const SizedBox(height: 12),
+          _buildActionButton(
+            context,
+            Icons.bookmark_outline_rounded,
+            'My Bookings',
+            () => Navigator.pushNamed(context, AppRoutes.bookings),
           ),
           const SizedBox(height: 12),
           _buildActionButton(

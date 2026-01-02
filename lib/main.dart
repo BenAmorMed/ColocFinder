@@ -8,6 +8,8 @@ import 'providers/auth_provider.dart';
 import 'providers/listing_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/booking_provider.dart';
+import 'providers/notification_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/auth/login_screen.dart';
@@ -36,6 +38,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ListingProvider()),
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => BookingProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider(create: (_) => FirestoreService()),

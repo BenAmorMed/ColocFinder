@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/theme.dart';
 import '../config/routes.dart';
 import '../models/listing_model.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/helpers.dart';
+import '../utils/image_helper.dart';
 
 class ListingCard extends StatelessWidget {
   final ListingModel listing;
@@ -18,6 +21,31 @@ class ListingCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
   });
+
+  Future<void> _viewOnMap(BuildContext context) async {
+    Uri url;
+    if (listing.latitude != null && listing.longitude != null) {
+      // Use coordinates for precise location
+      url = Uri.parse('https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}');
+    } else {
+      // Fallback to location name search
+      final query = Uri.encodeComponent(listing.location);
+      url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    }
+    
+    try {
+      // Try to launch with external application (Google Maps / Apple Maps)
+      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        // Fallback to platform default (typically browser) if external app fails
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Helpers.showSnackBar(context, 'Could not open maps. Please check if you have a map app or browser installed.', isError: true);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,20 +70,29 @@ class ListingCard extends StatelessWidget {
                 AspectRatio(
                   aspectRatio: 1.2,
                   child: listing.images.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: listing.images.first,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.home_work, size: 50),
-                          ),
-                        )
+                      ? (ImageHelper.isBase64(listing.images.first)
+                          ? Image.memory(
+                              ImageHelper.decodeBase64(listing.images.first),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.broken_image, size: 50),
+                              ),
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: listing.images.first,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.home_work, size: 50),
+                              ),
+                            ))
                       : Container(
                           color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: const Icon(Icons.home_work, size: 50),
@@ -72,7 +109,7 @@ class ListingCard extends StatelessWidget {
                       
                       return GestureDetector(
                         onTap: () {
-                          favProvider.toggleFavorite(userId, listing.id);
+                          favProvider.toggleFavorite(userId, listing.id, listing: listing);
                         },
                         child: Container(
                           padding: const EdgeInsets.all(8),
@@ -159,7 +196,7 @@ class ListingCard extends StatelessWidget {
             
             // Details
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -186,13 +223,21 @@ class ListingCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.map_outlined, size: 16),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => _viewOnMap(context),
+                        visualDensity: VisualDensity.compact,
+                        color: Theme.of(context).primaryColor,
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
                     listing.formattedPrice,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.primaryColor,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                   ),

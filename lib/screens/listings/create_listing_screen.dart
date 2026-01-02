@@ -11,6 +11,9 @@ import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../utils/validators.dart';
 import '../../utils/helpers.dart';
+import '../../config/routes.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geocoding/geocoding.dart' as geo;
 
 class CreateListingScreen extends StatefulWidget {
   const CreateListingScreen({super.key});
@@ -34,6 +37,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   
   final List<File> _imageFiles = [];
   final ImagePicker _picker = ImagePicker();
+  double? _latitude;
+  double? _longitude;
 
   @override
   void dispose() {
@@ -45,7 +50,11 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   }
 
   Future<void> _pickImages() async {
-    final List<XFile> pickedFiles = await _picker.pickMultiImage();
+    final List<XFile> pickedFiles = await _picker.pickMultiImage(
+      imageQuality: 50,
+      maxWidth: 800,
+      maxHeight: 800,
+    );
     if (pickedFiles.isNotEmpty) {
       setState(() {
         _imageFiles.addAll(pickedFiles.map((file) => File(file.path)));
@@ -57,6 +66,60 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     setState(() {
       _imageFiles.removeAt(index);
     });
+  }
+
+  Future<void> _pickLocation() async {
+    try {
+      final result = await Navigator.pushNamed(
+        context,
+        AppRoutes.mapPicker,
+        arguments: {
+          'initialLocation': _latitude != null && _longitude != null 
+              ? LatLng(_latitude!, _longitude!)
+              : null,
+        },
+      );
+
+      if (result != null && result is LatLng) {
+        setState(() {
+          _latitude = result.latitude;
+          _longitude = result.longitude;
+        });
+
+        // Reverse geocoding to sync text field with map selection
+        try {
+          List<geo.Placemark> placemarks = await geo.placemarkFromCoordinates(
+            result.latitude, 
+            result.longitude
+          );
+          if (placemarks.isNotEmpty) {
+            geo.Placemark place = placemarks[0];
+            // Prefer city/locality for the location field
+            String city = place.locality?.isNotEmpty == true 
+                ? place.locality! 
+                : (place.subAdministrativeArea?.isNotEmpty == true 
+                    ? place.subAdministrativeArea! 
+                    : place.administrativeArea ?? '');
+            
+            if (city.isNotEmpty) {
+              setState(() {
+                _locationController.text = city;
+              });
+            }
+          }
+        } catch (e) {
+          debugPrint('Reverse geocoding error: $e');
+        }
+
+        if (mounted) {
+          Helpers.showSnackBar(context, 'Location set on map!');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Helpers.showSnackBar(context, 'Error opening map: ${e.toString()}', isError: true);
+      }
+    }
   }
 
   Future<void> _handleCreate() async {
@@ -83,6 +146,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
         roomType: _selectedRoomType,
         images: [], // Will be uploaded and updated
         amenities: _amenities,
+        latitude: _latitude,
+        longitude: _longitude,
         availableFrom: DateTime.now(),
         createdAt: DateTime.now(),
         isActive: true,
@@ -174,6 +239,25 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 hintText: 'e.g., Tunis, Ariana, Sousse...',
                 prefixIcon: Icons.location_on_outlined,
                 validator: (v) => Validators.validateRequired(v, 'Location'),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: _pickLocation,
+                icon: Icon(
+                  _latitude != null ? Icons.location_on : Icons.map_outlined,
+                  color: _latitude != null ? Colors.green : AppTheme.primaryColor,
+                ),
+                label: Text(
+                  _latitude != null ? 'Location set on map' : 'Set precise location on map',
+                  style: TextStyle(
+                    color: _latitude != null ? Colors.green : AppTheme.primaryColor,
+                    fontWeight: _latitude != null ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                  padding: EdgeInsets.zero,
+                ),
               ),
               
               const SizedBox(height: 24),

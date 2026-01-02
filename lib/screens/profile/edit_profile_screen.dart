@@ -10,6 +10,7 @@ import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../utils/validators.dart';
 import '../../utils/helpers.dart';
+import '../../utils/image_helper.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -27,6 +28,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _workController;
   
   String _selectedGender = AppConstants.genderOptions[0];
+  Map<String, String> _lifestylePreferences = {};
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
 
@@ -39,7 +41,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _bioController = TextEditingController(text: user?.bio ?? '');
     _schoolController = TextEditingController(text: user?.school ?? '');
     _workController = TextEditingController(text: user?.work ?? '');
-    _selectedGender = user?.gender ?? AppConstants.genderOptions[0];
+    _selectedGender = AppConstants.genderOptions.contains(user?.gender)
+        ? user!.gender!
+        : AppConstants.genderOptions[0];
+    _lifestylePreferences = Map<String, String>.from(user?.lifestylePreferences ?? {});
   }
 
   @override
@@ -55,7 +60,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 70,
+      imageQuality: 50,
+      maxWidth: 500,
+      maxHeight: 500,
     );
     if (pickedFile != null) {
       setState(() {
@@ -75,6 +82,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         gender: _selectedGender,
         school: _schoolController.text.trim(),
         work: _workController.text.trim(),
+        lifestylePreferences: _lifestylePreferences,
         photoFile: _imageFile,
       );
 
@@ -123,7 +131,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             backgroundImage: _imageFile != null
                                 ? FileImage(_imageFile!)
                                 : (authProvider.userModel?.photoUrl != null
-                                    ? NetworkImage(authProvider.userModel!.photoUrl!)
+                                    ? (ImageHelper.isBase64(authProvider.userModel!.photoUrl!)
+                                        ? MemoryImage(ImageHelper.decodeBase64(authProvider.userModel!.photoUrl!))
+                                        : NetworkImage(authProvider.userModel!.photoUrl!))
                                     : null) as ImageProvider?,
                             child: _imageFile == null && authProvider.userModel?.photoUrl == null
                                 ? const Icon(Icons.person, size: 50, color: Colors.grey)
@@ -198,6 +208,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   const SizedBox(height: 32),
                   
+                  const Text(
+                    'Lifestyle Preferences',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Matching with other roommates is based on these preferences.',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  ..._buildLifestylePreferences(),
+                  const SizedBox(height: 32),
+                  
                   CustomButton(
                     text: 'Save Changes',
                     onPressed: _handleSave,
@@ -236,5 +260,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
       },
     );
+  }
+
+  List<Widget> _buildLifestylePreferences() {
+    return AppConstants.lifestylePreferences.entries.map((entry) {
+      final category = entry.key;
+      final options = entry.value;
+      
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: DropdownButtonFormField<String>(
+          initialValue: _lifestylePreferences[category] ?? options[0],
+          decoration: InputDecoration(
+            labelText: category,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          items: options.map((option) {
+            return DropdownMenuItem(
+              value: option,
+              child: Text(option),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value != null) {
+              setState(() {
+                _lifestylePreferences[category] = value;
+              });
+            }
+          },
+        ),
+      );
+    }).toList();
   }
 }

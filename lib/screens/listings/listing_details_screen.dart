@@ -14,6 +14,8 @@ import '../../providers/chat_provider.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../utils/helpers.dart';
+import '../../utils/image_helper.dart';
+import '../../services/matching_service.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
   final String listingId;
@@ -31,6 +33,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   ListingModel? _listing;
   UserModel? _owner;
   bool _isLoading = true;
+  bool _hasContacted = false;
   int _currentImageIndex = 0;
   final _pageController = PageController();
 
@@ -41,12 +44,19 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
     final firestoreService = context.read<FirestoreService>();
+    final authProvider = context.read<AuthProvider>();
+    
+    setState(() => _isLoading = true);
     
     _listing = await firestoreService.getListing(widget.listingId);
     if (_listing != null) {
       _owner = await firestoreService.getUser(_listing!.userId);
+      
+      final currentUserId = authProvider.user?.uid;
+      if (currentUserId != null && _listing != null) {
+        _hasContacted = await firestoreService.checkChatExists(currentUserId, _listing!.userId);
+      }
     }
     
     if (mounted) {
@@ -80,6 +90,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     if (!mounted) return;
 
     if (chatId != null) {
+      setState(() => _hasContacted = true);
       Navigator.pushNamed(
         context,
         AppRoutes.chat,
@@ -102,15 +113,49 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     );
   }
 
-  Future<void> _viewOnMap() async {
-    final query = Uri.encodeComponent(_listing!.location);
-    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
-    
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
+  Future<void> _callOwner() async {
+    if (_owner?.phone == null || _owner!.phone!.isEmpty) {
+      Helpers.showSnackBar(context, 'This owner has not provided a phone number', isError: true);
+      return;
+    }
+
+    final Uri url = Uri.parse('tel:${_owner!.phone}');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+      } else {
+        if (mounted) {
+          Helpers.showSnackBar(context, 'Could not open dialer', isError: true);
+        }
+      }
+    } catch (e) {
       if (mounted) {
-        Helpers.showSnackBar(context, 'Could not open maps', isError: true);
+        Helpers.showSnackBar(context, 'Error: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _viewOnMap() async {
+    Uri url;
+    if (_listing!.latitude != null && _listing!.longitude != null) {
+      // Use coordinates for precise location
+      url = Uri.parse('https://www.google.com/maps/search/?api=1&query=${_listing!.latitude},${_listing!.longitude}');
+    } else {
+      // Fallback to location name search
+      final query = Uri.encodeComponent(_listing!.location);
+      url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    }
+    
+    try {
+      // Try to launch with external application (Google Maps / Apple Maps)
+      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        // Fallback to platform default (typically browser) if external app fails
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (mounted) {
+        Helpers.showSnackBar(context, 'Could not open maps. Please check if you have a map app or browser installed.', isError: true);
       }
     }
   }
@@ -181,8 +226,16 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                         setState(() => _currentImageIndex = index);
                       },
                       itemBuilder: (context, index) {
+                        final imageUrl = _listing!.images[index];
+                        if (ImageHelper.isBase64(imageUrl)) {
+                          return Image.memory(
+                            ImageHelper.decodeBase64(imageUrl),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 50),
+                          );
+                        }
                         return CachedNetworkImage(
-                          imageUrl: _listing!.images[index],
+                          imageUrl: imageUrl,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
                             color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -237,7 +290,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                   Helpers.showSnackBar(context, 'Please login to favorite listings', isError: true);
                   return;
                 }
-                favProvider.toggleFavorite(userId, _listing!.id);
+                favProvider.toggleFavorite(userId, _listing!.id, listing: _listing);
               },
             );
           },
@@ -353,7 +406,61 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   Widget _buildOwnerSection(BuildContext context) {
     if (_owner == null) return const SizedBox();
 
-    return Container(
+    final currentUser = context.read<AuthProvider>().userModel;
+    int? matchScore;
+    if (currentUser != null && currentUser.id != _owner!.id) {
+      matchScore = MatchingService.calculateMatchingScore(currentUser, _owner!);
+    }
+
+    return Column(
+      children: [
+        if (matchScore != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: CircularProgressIndicator(
+                        value: matchScore / 100,
+                        backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.2),
+                        color: AppTheme.primaryColor,
+                        strokeWidth: 4,
+                      ),
+                    ),
+                    Text('$matchScore%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        MatchingService.getMatchingLabel(matchScore),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Text(
+                        'Based on your lifestyle and preferences',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -383,6 +490,31 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                   ],
                 ),
               ),
+              if (_owner!.phone != null && _owner!.phone!.isNotEmpty)
+                IconButton(
+                  onPressed: () {
+                    if (!_hasContacted) {
+                      Helpers.showSnackBar(
+                        context, 
+                        'Please send a message to the owner first to enable calling', 
+                        isError: true
+                      );
+                      return;
+                    }
+                    _callOwner();
+                  },
+                  icon: Icon(
+                    Icons.phone_outlined,
+                    color: _hasContacted ? AppTheme.primaryColor : Colors.grey,
+                  ),
+                  tooltip: _hasContacted ? 'Call' : 'Message first to call',
+                ),
+              IconButton(
+                onPressed: _startChat,
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                color: AppTheme.primaryColor,
+                tooltip: 'Message',
+              ),
             ],
           ),
           if (_owner!.bio != null && _owner!.bio!.isNotEmpty) ...[
@@ -391,8 +523,10 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
           ],
         ],
       ),
-    );
-  }
+    ),
+  ],
+);
+}
 
   Widget _buildBottomBar(BuildContext context) {
     return Container(
@@ -408,11 +542,29 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
           children: [
             Expanded(
               child: CustomButton(
-                text: 'Message Roommate',
+                text: 'Message',
                 onPressed: _startChat,
                 prefixIcon: Icons.chat_bubble_outline_rounded,
+                isFullWidth: true,
               ),
             ),
+            if (context.read<AuthProvider>().user?.uid != _listing?.userId) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomButton(
+                  text: 'Request to Book',
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.requestBooking,
+                      arguments: {'listing': _listing},
+                    );
+                  },
+                  prefixIcon: Icons.bookmark_add_outlined,
+                  isFullWidth: true,
+                ),
+              ),
+            ],
           ],
         ),
       ),

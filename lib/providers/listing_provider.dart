@@ -2,12 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/listing_model.dart';
 import '../services/firestore_service.dart';
-import '../services/storage_service.dart';
+import '../utils/image_helper.dart';
 import '../config/constants.dart';
 
 class ListingProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
-  final StorageService _storageService = StorageService();
 
   List<ListingModel> _listings = [];
   List<ListingModel> _userListings = [];
@@ -112,19 +111,21 @@ class ListingProvider with ChangeNotifier {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
+      debugPrint('📝 ListingProvider: Starting creation with Base64 workaround...');
 
-      // 1. Generate an ID first
-      final listingId = _firestoreService.generateListingId();
-
-      // 2. Upload images using that ID
+      // Process images to Base64
       List<String> imageUrls = [];
       if (imageFiles.isNotEmpty) {
-        imageUrls = await _storageService.uploadListingPhotos(listingId, imageFiles);
+        for (var file in imageFiles) {
+          final base64String = await ImageHelper.fileToBase64(file);
+          imageUrls.add(base64String);
+        }
+        debugPrint('📝 ListingProvider: Processed ${imageUrls.length} photos to Base64.');
       }
 
-      // 3. Create the listing with the ID and image URLs in one go
+      // Create the listing
       final finalListing = listing.copyWith(
-        id: listingId,
+        id: _firestoreService.generateListingId(),
         images: imageUrls,
       );
       
@@ -142,17 +143,36 @@ class ListingProvider with ChangeNotifier {
   }
 
   // Update listing
-  Future<bool> updateListing(ListingModel listing, {List<File>? newImageFiles}) async {
+  Future<bool> updateListing(
+    ListingModel listing, {
+    List<File>? newImageFiles,
+    List<String>? removedImageUrls,
+  }) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      if (newImageFiles != null && newImageFiles.isNotEmpty) {
-        final imageUrls = await _storageService.uploadListingPhotos(listing.id, newImageFiles);
-        listing = listing.copyWith(images: [...listing.images, ...imageUrls]);
+      // In Base64 mode, we just update the images list
+      List<String> updatedImages = List.from(listing.images);
+      
+      // Removed images are already handled by screen logic (passed in listing.images)
+      // or we can filter them here if removedImageUrls is provided
+      if (removedImageUrls != null) {
+        updatedImages.removeWhere((url) => removedImageUrls.contains(url));
       }
 
-      await _firestoreService.updateListing(listing);
+      // Add new images as Base64
+      if (newImageFiles != null && newImageFiles.isNotEmpty) {
+        for (var file in newImageFiles) {
+          final base64String = await ImageHelper.fileToBase64(file);
+          updatedImages.add(base64String);
+        }
+      }
+
+      final updatedListing = listing.copyWith(images: updatedImages);
+
+      // Update Firestore
+      await _firestoreService.updateListing(updatedListing);
       
       _isLoading = false;
       notifyListeners();
@@ -165,16 +185,12 @@ class ListingProvider with ChangeNotifier {
     }
   }
 
-  // Delete listing with its images
+  // Delete listing (no storage cleanup needed now)
   Future<bool> deleteListing(String listingId) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      // 1. Delete images from storage
-      await _storageService.deleteListingPhotos(listingId);
-
-      // 2. Delete document from Firestore
       await _firestoreService.deleteListing(listingId);
 
       _isLoading = false;

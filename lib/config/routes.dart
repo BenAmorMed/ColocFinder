@@ -12,7 +12,13 @@ import '../screens/listings/edit_listing_screen.dart';
 import '../screens/favorites/favorites_screen.dart';
 import '../screens/messaging/chats_screen.dart';
 import '../screens/messaging/chat_screen.dart';
+import '../screens/bookings/my_bookings_screen.dart';
+import '../screens/bookings/request_booking_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/listings/map_picker_screen.dart';
+import '../models/listing_model.dart';
+import 'package:latlong2/latlong.dart';
 
 class AppRoutes {
   // Route Names
@@ -29,7 +35,11 @@ class AppRoutes {
   static const String favorites = '/favorites';
   static const String chats = '/chats';
   static const String chat = '/chat';
+  static const String bookings = '/bookings';
+  static const String requestBooking = '/request-booking';
+  static const String notifications = '/notifications';
   static const String onboarding = '/onboarding';
+  static const String mapPicker = '/map-picker';
   
   // Route Generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -98,6 +108,28 @@ class AppRoutes {
           ),
         );
       
+      case bookings:
+        return MaterialPageRoute(builder: (_) => const MyBookingsScreen());
+
+      case requestBooking:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => RequestBookingScreen(
+            listing: args?['listing'] as ListingModel,
+          ),
+        );
+      
+      case notifications:
+        return MaterialPageRoute(builder: (_) => const NotificationsScreen());
+      
+      case mapPicker:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => MapPickerScreen(
+            initialLocation: args?['initialLocation'] as LatLng?,
+          ),
+        );
+
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

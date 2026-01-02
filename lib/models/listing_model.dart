@@ -15,6 +15,8 @@ class ListingModel {
   final bool isActive;
   final String? userName;
   final String? userPhoto;
+  final double? latitude;
+  final double? longitude;
 
   ListingModel({
     required this.id,
@@ -31,6 +33,8 @@ class ListingModel {
     this.isActive = true,
     this.userName,
     this.userPhoto,
+    this.latitude,
+    this.longitude,
   })  : images = images ?? [],
         amenities = amenities ?? {},
         availableFrom = availableFrom ?? DateTime.now(),
@@ -53,6 +57,8 @@ class ListingModel {
       'isActive': isActive,
       'userName': userName,
       'userPhoto': userPhoto,
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
@@ -73,6 +79,8 @@ class ListingModel {
       isActive: map['isActive'] ?? true,
       userName: map['userName'],
       userPhoto: map['userPhoto'],
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -82,7 +90,6 @@ class ListingModel {
     return ListingModel.fromMap(data);
   }
 
-  // CopyWith method for updates
   ListingModel copyWith({
     String? id,
     String? userId,
@@ -98,6 +105,8 @@ class ListingModel {
     bool? isActive,
     String? userName,
     String? userPhoto,
+    double? latitude,
+    double? longitude,
   }) {
     return ListingModel(
       id: id ?? this.id,
@@ -114,6 +123,8 @@ class ListingModel {
       isActive: isActive ?? this.isActive,
       userName: userName ?? this.userName,
       userPhoto: userPhoto ?? this.userPhoto,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 

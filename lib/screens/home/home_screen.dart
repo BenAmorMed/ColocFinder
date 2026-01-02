@@ -28,7 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _initializeData();
+    });
   }
 
   void _initializeData() {
@@ -186,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.7,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -231,6 +233,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.pushNamed(context, AppRoutes.createListing);
                   },
                 ),
+              IconButton(
+                icon: const Icon(Icons.notifications_none_rounded),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.notifications);
+                },
+              ),
             ],
           ),
           body: _screens[currentIndex],

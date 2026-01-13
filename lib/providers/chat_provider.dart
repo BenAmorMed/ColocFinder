@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
+import '../models/notification_model.dart';
 import '../services/firestore_service.dart';
 import '../utils/image_helper.dart';
 import 'dart:io';
@@ -75,9 +76,23 @@ class ChatProvider with ChangeNotifier {
   }
 
   // Send message
-  Future<bool> sendMessage(String chatId, MessageModel message) async {
+  Future<bool> sendMessage(String chatId, MessageModel message, {String? otherUserId, String? currentUserName}) async {
     try {
       await _firestoreService.sendMessage(chatId, message);
+      
+      // Send notification if otherUserId is provided
+      if (otherUserId != null) {
+        final notification = NotificationModel(
+          id: '',
+          userId: otherUserId,
+          title: currentUserName != null ? 'Message from $currentUserName' : 'New Message',
+          body: message.type == MessageType.image ? 'Sent an image' : message.text,
+          type: NotificationType.message,
+          relatedId: chatId,
+        );
+        await _firestoreService.addNotification(notification);
+      }
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -88,7 +103,7 @@ class ChatProvider with ChangeNotifier {
   }
 
   // Send image message
-  Future<bool> sendImageMessage(String chatId, MessageModel message, File imageFile) async {
+  Future<bool> sendImageMessage(String chatId, MessageModel message, File imageFile, {String? otherUserId, String? currentUserName}) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -98,6 +113,19 @@ class ChatProvider with ChangeNotifier {
       
       // 2. Send message with Base64 data inside imageUrl
       await _firestoreService.sendMessage(chatId, message.copyWith(imageUrl: imageUrl));
+
+      // Send notification if otherUserId is provided
+      if (otherUserId != null) {
+        final notification = NotificationModel(
+          id: '',
+          userId: otherUserId,
+          title: currentUserName != null ? 'Message from $currentUserName' : 'New Message',
+          body: 'Sent an image',
+          type: NotificationType.message,
+          relatedId: chatId,
+        );
+        await _firestoreService.addNotification(notification);
+      }
 
       _isLoading = false;
       notifyListeners();

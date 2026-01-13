@@ -369,11 +369,12 @@ class FirestoreService {
   // ============ BOOKING OPERATIONS ============
 
   // Create booking
-  Future<void> createBooking(BookingModel booking) async {
+  Future<String> createBooking(BookingModel booking) async {
     final docRef = _db.collection(AppConstants.bookingsCollection).doc();
     await _db.collection(AppConstants.bookingsCollection).doc(docRef.id).set(
       booking.toMap()..['id'] = docRef.id
     );
+    return docRef.id;
   }
 
   // Update booking status

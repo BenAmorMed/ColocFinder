@@ -43,6 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final currentUserId = authProvider.user?.uid;
     
     if (currentUserId == null) return;
+    final currentUserName = authProvider.userModel?.name;
 
     final message = MessageModel(
       id: '',
@@ -51,7 +52,12 @@ class _ChatScreenState extends State<ChatScreen> {
       timestamp: DateTime.now(),
     );
 
-    Provider.of<ChatProvider>(context, listen: false).sendMessage(widget.chatId, message);
+    Provider.of<ChatProvider>(context, listen: false).sendMessage(
+      widget.chatId, 
+      message,
+      otherUserId: widget.otherUserId,
+      currentUserName: currentUserName,
+    );
     _messageController.clear();
     
     _scrollToBottom();
@@ -71,6 +77,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.user?.uid;
+    final currentUserName = authProvider.userModel?.name;
     
     if (currentUserId == null) return;
 
@@ -86,6 +93,8 @@ class _ChatScreenState extends State<ChatScreen> {
       widget.chatId, 
       message, 
       File(image.path),
+      otherUserId: widget.otherUserId,
+      currentUserName: currentUserName,
     );
 
     _scrollToBottom();

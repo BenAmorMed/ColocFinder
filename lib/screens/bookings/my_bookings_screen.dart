@@ -201,6 +201,6 @@ class _BookingCard extends StatelessWidget {
   }
 
   void _updateStatus(BuildContext context, BookingStatus status) {
-    context.read<BookingProvider>().updateBookingStatus(booking.id, status);
+    context.read<BookingProvider>().updateBookingStatus(booking, status);
   }
 }

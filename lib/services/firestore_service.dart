@@ -308,10 +308,27 @@ class FirestoreService {
         .collection(AppConstants.chatsCollection)
         .where('participants', arrayContains: userId)
         .snapshots()
-        .map((snapshot) {
-      final chats = snapshot.docs
-          .map((doc) => ChatModel.fromSnapshot(doc))
-          .toList();
+        .asyncMap((snapshot) async {
+      final chats = await Future.wait(snapshot.docs.map((doc) async {
+        var chat = ChatModel.fromSnapshot(doc);
+        
+        final otherUserId = chat.participants.firstWhere(
+          (id) => id != userId,
+          orElse: () => '',
+        );
+
+        if (otherUserId.isNotEmpty) {
+          final userDoc = await _db.collection(AppConstants.usersCollection).doc(otherUserId).get();
+          if (userDoc.exists) {
+            final user = UserModel.fromSnapshot(userDoc);
+            chat = chat.copyWith(
+              otherUserName: user.name,
+              otherUserPhoto: user.photoUrl,
+            );
+          }
+        }
+        return chat;
+      }));
       
       // Sort in-memory to avoid index requirement
       chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));

@@ -29,7 +29,9 @@ class MessageBubble extends StatelessWidget {
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
             decoration: BoxDecoration(
-              color: isMe ? AppTheme.primaryColor : Colors.white,
+              color: isMe 
+                  ? AppTheme.primaryColor 
+                  : (Theme.of(context).cardTheme.color ?? Colors.white),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(20),
                 topRight: const Radius.circular(20),
@@ -74,7 +76,9 @@ class MessageBubble extends StatelessWidget {
                   Text(
                     message.text,
                     style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black87,
+                      color: isMe 
+                          ? Colors.white 
+                          : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
                       fontSize: 15,
                       height: 1.4,
                     ),

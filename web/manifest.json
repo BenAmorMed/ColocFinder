@@ -1,6 +1,6 @@
 {
-    "name": "coloc_finder",
-    "short_name": "coloc_finder",
+    "name": "Coloc Finder",
+    "short_name": "Coloc Finder",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

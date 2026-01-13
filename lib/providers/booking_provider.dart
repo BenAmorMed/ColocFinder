@@ -30,6 +30,7 @@ class BookingProvider with ChangeNotifier {
         body: '${booking.requesterName} wants to book ${booking.listingTitle}',
         type: NotificationType.bookingRequest,
         relatedId: bookingId,
+      );
       
       // I will fix FirestoreService.createBooking to return ID or similar, but for now let's just add notification. 
       // Actually, safest is to use the same logic as FirestoreService or just rely on generic notification without specific ID if difficult.

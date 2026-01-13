@@ -5,9 +5,7 @@ import '../services/firestore_service.dart';
 class NotificationProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   
-  bool _isLoading = false;
-
-  bool get isLoading => _isLoading;
+  // Stream notifications
 
   // Stream notifications
   Stream<List<NotificationModel>> streamNotifications(String userId) {

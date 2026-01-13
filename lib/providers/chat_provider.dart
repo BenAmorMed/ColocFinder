@@ -86,7 +86,7 @@ class ChatProvider with ChangeNotifier {
           id: '',
           userId: otherUserId,
           title: currentUserName != null ? 'Message from $currentUserName' : 'New Message',
-          body: message.type == MessageType.image ? 'Sent an image' : message.text,
+          body: message.imageUrl != null ? 'Sent an image' : message.text,
           type: NotificationType.message,
           relatedId: chatId,
         );

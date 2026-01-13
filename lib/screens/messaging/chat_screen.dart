@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../models/message_model.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../utils/helpers.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -35,7 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  void _handleSend() {
+  Future<void> _handleSend() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 

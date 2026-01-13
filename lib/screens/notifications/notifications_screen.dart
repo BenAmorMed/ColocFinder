@@ -42,6 +42,19 @@ class NotificationsScreen extends StatelessWidget {
               subtitle: 'You are all caught up!',
             );
           }
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SelectableText(
+                  'Error loading notifications: ${snapshot.error}\n\nIf this persists, check logs for Firestore Index link.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            );
+          }
 
           return ListView.builder(
             itemCount: notifications.length,

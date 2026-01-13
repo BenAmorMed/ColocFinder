@@ -78,10 +78,13 @@ class ChatProvider with ChangeNotifier {
   // Send message
   Future<bool> sendMessage(String chatId, MessageModel message, {String? otherUserId, String? currentUserName}) async {
     try {
+      print('DEBUG: Sending message. chatId: $chatId, otherUserId: $otherUserId');
+      
       await _firestoreService.sendMessage(chatId, message);
       
       // Send notification if otherUserId is provided
-      if (otherUserId != null) {
+      if (otherUserId != null && otherUserId.isNotEmpty) {
+        print('DEBUG: Creating notification for user: $otherUserId');
         final notification = NotificationModel(
           id: '',
           userId: otherUserId,
@@ -91,6 +94,9 @@ class ChatProvider with ChangeNotifier {
           relatedId: chatId,
         );
         await _firestoreService.addNotification(notification);
+        print('DEBUG: Notification added to Firestore');
+      } else {
+        print('DEBUG: otherUserId is null or empty. Notification skipped.');
       }
 
       notifyListeners();

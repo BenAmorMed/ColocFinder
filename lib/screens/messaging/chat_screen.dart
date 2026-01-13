@@ -52,15 +52,26 @@ class _ChatScreenState extends State<ChatScreen> {
       timestamp: DateTime.now(),
     );
 
-    Provider.of<ChatProvider>(context, listen: false).sendMessage(
+    final provider = Provider.of<ChatProvider>(context, listen: false);
+    final success = await provider.sendMessage(
       widget.chatId, 
       message,
       otherUserId: widget.otherUserId,
       currentUserName: currentUserName,
     );
-    _messageController.clear();
     
-    _scrollToBottom();
+    if (success) {
+      _messageController.clear();
+      _scrollToBottom();
+    } else {
+      if (mounted) {
+        Helpers.showSnackBar(
+          context, 
+          'Failed to send message: ${provider.errorMessage ?? "Unknown error"}', 
+          isError: true
+        );
+      }
+    }
   }
 
   Future<void> _pickImage() async {

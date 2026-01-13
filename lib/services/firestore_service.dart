@@ -414,7 +414,7 @@ class FirestoreService {
     return _db
         .collection(AppConstants.notificationsCollection)
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
+        // .orderBy('createdAt', descending: true) // Removed temporarily to fix potential index error
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => NotificationModel.fromSnapshot(doc))

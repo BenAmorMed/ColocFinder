@@ -13,8 +13,9 @@ import '../../providers/favorites_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/loading_indicator.dart';
-import '../../utils/helpers.dart';
 import '../../utils/image_helper.dart';
+import '../../utils/helpers.dart';
+
 import '../../services/matching_service.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
@@ -477,7 +478,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               CircleAvatar(
                 radius: 25,
                 backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                backgroundImage: _owner!.photoUrl != null ? NetworkImage(_owner!.photoUrl!) : null,
+                backgroundImage: _owner!.photoUrl != null ? ImageHelper.getSafeImageProvider(_owner!.photoUrl!) : null,
                 child: _owner!.photoUrl == null ? Text(Helpers.getInitials(_owner!.name)) : null,
               ),
               const SizedBox(width: 12),

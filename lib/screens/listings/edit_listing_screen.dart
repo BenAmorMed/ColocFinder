@@ -5,12 +5,13 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../config/constants.dart';
 import '../../providers/listing_provider.dart';
+import '../../utils/image_helper.dart';
 import '../../models/listing_model.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../utils/validators.dart';
 import '../../utils/helpers.dart';
-import '../../utils/image_helper.dart';
+
 
 class EditListingScreen extends StatefulWidget {
   final ListingModel listing;
@@ -283,9 +284,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         image: DecorationImage(
-                          image: ImageHelper.isBase64(_existingImages[index])
-                              ? MemoryImage(ImageHelper.decodeBase64(_existingImages[index]))
-                              : NetworkImage(_existingImages[index]) as ImageProvider,
+                          image: ImageHelper.getSafeImageProvider(_existingImages[index]),
                           fit: BoxFit.cover,
                         ),
                       ),

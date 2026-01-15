@@ -78,9 +78,7 @@ class UserProfileScreen extends StatelessWidget {
             radius: 60,
             backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
             backgroundImage: user.photoUrl != null 
-                ? (ImageHelper.isBase64(user.photoUrl!)
-                    ? MemoryImage(ImageHelper.decodeBase64(user.photoUrl!))
-                    : NetworkImage(user.photoUrl!)) as ImageProvider
+                ? ImageHelper.getSafeImageProvider(user.photoUrl!)
                 : null,
             child: user.photoUrl == null
                 ? const Icon(Icons.person, size: 60, color: AppTheme.primaryColor)

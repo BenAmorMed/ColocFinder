@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import '../config/theme.dart';
 import '../config/routes.dart';
 import '../models/listing_model.dart';
+import '../utils/image_helper.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/helpers.dart';
-import '../utils/image_helper.dart';
+
 
 class ListingCard extends StatelessWidget {
   final ListingModel listing;
@@ -70,29 +71,20 @@ class ListingCard extends StatelessWidget {
                 AspectRatio(
                   aspectRatio: 1.2,
                   child: listing.images.isNotEmpty
-                      ? (ImageHelper.isBase64(listing.images.first)
-                          ? Image.memory(
-                              ImageHelper.decodeBase64(listing.images.first),
+                      ? ImageHelper.getSafeImage(
+                              url: listing.images.first,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.broken_image, size: 50),
-                              ),
-                            )
-                          : CachedNetworkImage(
-                              imageUrl: listing.images.first,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
+                              placeholder: Container(
                                 color: Colors.grey[200],
                                 child: const Center(
                                   child: CircularProgressIndicator(),
                                 ),
                               ),
-                              errorWidget: (context, url, error) => Container(
+                              errorWidget: Container(
                                 color: Colors.grey[200],
                                 child: const Icon(Icons.home_work, size: 50),
                               ),
-                            ))
+                            )
                       : Container(
                           color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: const Icon(Icons.home_work, size: 50),

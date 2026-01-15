@@ -409,16 +409,24 @@ class FirestoreService {
 
   // ============ NOTIFICATION OPERATIONS ============
 
-  // Get user notifications
   Stream<List<NotificationModel>> getNotifications(String userId) {
     return _db
         .collection(AppConstants.notificationsCollection)
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
+        // .orderBy('createdAt', descending: true) // Removed to avoid index requirement
         .snapshots()
-        .map((snapshot) => snapshot.docs
+        .map((snapshot) {
+          final notifications = snapshot.docs
             .map((doc) => NotificationModel.fromSnapshot(doc))
-            .toList());
+            .toList();
+          
+          print('DEBUG: Fetched ${notifications.length} notifications for user: $userId');
+          
+          // Sort in-memory instead
+          notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          
+          return notifications;
+        });
   }
 
   // Mark notification as read
@@ -446,9 +454,11 @@ class FirestoreService {
 
   // Generic method to add notification
   Future<void> addNotification(NotificationModel notification) async {
+    print('DEBUG: Adding notification for user: ${notification.userId}, title: ${notification.title}');
     final docRef = _db.collection(AppConstants.notificationsCollection).doc();
     await _db.collection(AppConstants.notificationsCollection).doc(docRef.id).set(
       notification.toMap()..['id'] = docRef.id
     );
+    print('DEBUG: Notification added successfully with ID: ${docRef.id}');
   }
 }

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/image_helper.dart';
 import '../../providers/navigation_provider.dart';
 import '../../widgets/common/empty_state.dart';
 import '../../utils/helpers.dart';
 import '../../config/routes.dart';
 import '../../config/theme.dart';
-import '../../utils/image_helper.dart';
 
 class ChatsScreen extends StatelessWidget {
   const ChatsScreen({super.key});
@@ -74,9 +73,7 @@ class ChatsScreen extends StatelessWidget {
                         radius: 28,
                         backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                         backgroundImage: chat.otherUserPhoto != null
-                            ? (ImageHelper.isBase64(chat.otherUserPhoto!)
-                                ? MemoryImage(ImageHelper.decodeBase64(chat.otherUserPhoto!))
-                                : CachedNetworkImageProvider(chat.otherUserPhoto!)) as ImageProvider
+                            ? ImageHelper.getSafeImageProvider(chat.otherUserPhoto!)
                             : null,
                         child: chat.otherUserPhoto == null
                             ? Text(

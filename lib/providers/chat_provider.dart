@@ -82,6 +82,7 @@ class ChatProvider with ChangeNotifier {
       
       // Send notification if otherUserId is provided
       if (otherUserId != null && otherUserId.isNotEmpty) {
+        print('DEBUG: Sending notification to otherUserId: $otherUserId');
         final notification = NotificationModel(
           id: '',
           userId: otherUserId,

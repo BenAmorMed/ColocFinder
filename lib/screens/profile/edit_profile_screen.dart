@@ -131,10 +131,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             backgroundImage: _imageFile != null
                                 ? FileImage(_imageFile!)
                                 : (authProvider.userModel?.photoUrl != null
-                                    ? (ImageHelper.isBase64(authProvider.userModel!.photoUrl!)
-                                        ? MemoryImage(ImageHelper.decodeBase64(authProvider.userModel!.photoUrl!))
-                                        : NetworkImage(authProvider.userModel!.photoUrl!))
-                                    : null) as ImageProvider?,
+                                    ? ImageHelper.getSafeImageProvider(authProvider.userModel!.photoUrl!)
+                                    : null),
                             child: _imageFile == null && authProvider.userModel?.photoUrl == null
                                 ? const Icon(Icons.person, size: 50, color: Colors.grey)
                                 : null,
